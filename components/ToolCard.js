@@ -1,3 +1,1 @@
-export default function ToolCard({ name, description, children }) {
-  return <article className="tool-card"><h3>{name}</h3><p className="muted">{description}</p>{children}</article>;
-}
+export default function ToolCard({tool,onUse,loading}){return <article className="tool"><div className="toolIcon">⌘</div><div className="toolBody"><h3>{tool.name}</h3><p>{tool.description||"API tool"}</p><div className="toolFoot"><span className="pill">{tool.cost||1} credit{(tool.cost||1)===1?"":"s"}</span><button className="btn smallBtn" onClick={()=>onUse(tool)} disabled={loading}>{loading?"Running…":"Run tool →"}</button></div></div></article>;}
