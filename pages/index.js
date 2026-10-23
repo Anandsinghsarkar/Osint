@@ -1,17 +1,2 @@
 import Link from "next/link";
-
-export default function Home() {
-  return (
-    <main className="container">
-      <section className="panel">
-        <p className="eyebrow">INDIA API SUITE</p>
-        <h1>OSINT & API Dashboard</h1>
-        <p className="muted">Starter structure is ready. Add your own authorized tools and API integrations here.</p>
-        <div className="actions">
-          <Link className="button" href="/login">Login</Link>
-          <Link className="button secondary" href="/dashboard">Dashboard</Link>
-        </div>
-      </section>
-    </main>
-  );
-}
+export default function Home(){return <main className="hero"><div className="nav"><b>INDIA API SUITE</b><div><Link href="/login">Login</Link><Link href="/dashboard">Dashboard</Link></div></div><section className="heroCard"><span className="pill">API TOOLKIT</span><h1>One place for your<br/><em>API tools.</em></h1><p>Sign in with Google, use admin-managed tools, and manage credits from a single dashboard.</p><div className="row"><Link className="btn" href="/login">Continue with Google</Link><Link className="btn ghost" href="/dashboard">Open dashboard</Link></div></section><footer>Secure starter • Firebase-powered • Vercel-ready</footer></main>}
