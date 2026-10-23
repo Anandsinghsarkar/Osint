@@ -1,6 +1,2 @@
-export default async function handler(req, res) {
-  res.setHeader("Allow", "POST");
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-  // TODO: Verify Firebase ID token server-side and issue a secure session cookie.
-  return res.status(501).json({ error: "Session endpoint not configured yet" });
-}
+import {requireUser,sendError} from "../_helpers";
+export default async function handler(req,res){if(req.method!=="POST"){res.setHeader("Allow","POST");return res.status(405).json({error:"Method not allowed"});}try{const c=await requireUser(req);return res.json({ok:true,user:{uid:c.decoded.uid,email:c.user.email,name:c.user.name,role:c.user.role,credits:c.user.credits||0}})}catch(e){return sendError(res,e)}}
