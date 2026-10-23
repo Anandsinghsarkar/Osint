@@ -1,8 +1,2 @@
-export default async function handler(req, res) {
-  if (req.method !== "GET") {
-    res.setHeader("Allow", "GET");
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-  // TODO: Return only enabled tools the signed-in user is allowed to access.
-  return res.status(200).json({ tools: [] });
-}
+import {requireUser,sendError,getFirebaseAdmin} from "../_helpers";
+export default async function handler(req,res){if(req.method!=="GET"){res.setHeader("Allow","GET");return res.status(405).json({error:"Method not allowed"});}try{await requireUser(req);const s=await getFirebaseAdmin().firestore().collection("tools").where("enabled","==",true).get();return res.json({tools:s.docs.map(d=>({id:d.id,...d.data()})).map(({url,...t})=>t)});}catch(e){return sendError(res,e)}}
