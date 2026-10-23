@@ -5,18 +5,16 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "next start"
   },
   "dependencies": {
-    "firebase": "^11.0.0",
-    "firebase-admin": "^13.0.0",
-    "next": "^14.2.0",
-    "react": "^18.3.0",
-    "react-dom": "^18.3.0"
-  },
-  "devDependencies": {
-    "eslint": "^8.57.0",
-    "eslint-config-next": "^14.2.0"
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "firebase": "^10.12.2",
+    "firebase-admin": "^12.2.0",
+    "razorpay": "^2.9.4",
+    "cookie": "^0.6.0",
+    "jose": "^5.4.0"
   }
 }
