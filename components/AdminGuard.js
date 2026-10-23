@@ -1,11 +1,2 @@
-import Link from "next/link";
-
-export default function AdminGuard({ children }) {
-  // UI placeholder only. Enforce admin access in every server/API route too.
-  const isAdmin = false;
-  if (!isAdmin) return <main className="container"><section className="panel">
-    <h1>Admin access</h1><p className="muted">Connect verified authentication and role checks before enabling this page.</p>
-    <Link href="/login">Go to login</Link>
-  </section></main>;
-  return children;
-}
+import {useEffect,useState} from "react";import {useRouter} from "next/router";import {onAuthStateChanged} from "firebase/auth";import {auth} from "../lib/firebase";
+export default function AdminGuard({children}){const [state,setState]=useState("loading");const router=useRouter();useEffect(()=>onAuthStateChanged(auth,async u=>{if(!u){setState("denied");router.replace("/login");return;}try{const token=await u.getIdToken();const r=await fetch("/api/admin/stats",{headers:{Authorization:"Bearer "+token}});setState(r.ok?"ok":"denied");if(!r.ok)router.replace("/dashboard");}catch{setState("denied");router.replace("/dashboard");}}),[router]);if(state!=="ok")return <div className="center muted">Checking admin access…</div>;return children}
