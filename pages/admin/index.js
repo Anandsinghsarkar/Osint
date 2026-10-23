@@ -1,15 +1,2 @@
-import Layout from "../../components/Layout";
-import AdminGuard from "../../components/AdminGuard";
-
-export default function AdminHome() {
-  return (
-    <AdminGuard>
-      <Layout title="Admin">
-        <section className="panel">
-          <h1>Admin Panel</h1>
-          <p className="muted">Add admin overview and statistics here.</p>
-        </section>
-      </Layout>
-    </AdminGuard>
-  );
-}
+import Link from "next/link";import Layout from "../../components/Layout";import AdminGuard from "../../components/AdminGuard";
+export default function AdminHome(){return <AdminGuard><Layout title="CONTROL CENTER"><h1>Admin panel</h1><p className="muted">Manage website tools, users, credits, payment settings and access.</p><div className="adminGrid"><Link className="adminTile" href="/admin/tools"><b>⌘ Tools</b><span>Add, edit, delete and publish API tools.</span></Link><Link className="adminTile" href="/admin/users"><b>♙ Users & credits</b><span>Review accounts and adjust credit balances.</span></Link><Link className="adminTile" href="/admin/settings"><b>⚙ Payments & settings</b><span>Configure QR payments and Razorpay.</span></Link></div></Layout></AdminGuard>}
