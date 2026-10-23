@@ -1,10 +1,2 @@
-export default function Login() {
-  return (
-    <main className="container">
-      <section className="panel">
-        <h1>Login</h1>
-        <p className="muted">Add Firebase Authentication UI and session handling here.</p>
-      </section>
-    </main>
-  );
-}
+import {useState} from "react";import {useRouter} from "next/router";import {signInWithPopup} from "firebase/auth";import {auth,googleProvider} from "../lib/firebase";
+export default function Login(){const [error,setError]=useState(""),[busy,setBusy]=useState(false);const router=useRouter();async function login(){setBusy(true);setError("");try{await signInWithPopup(auth,googleProvider);router.replace("/dashboard");}catch(e){setError(e.message||"Google login failed");}finally{setBusy(false);}}return <main className="center"><section className="card login"><div className="logo">A</div><h1>Welcome back</h1><p className="muted">Sign in securely with your Google account.</p><button className="btn wide" disabled={busy} onClick={login}>{busy?"Connecting…":"Continue with Google"}</button>{error&&<p className="error">{error}</p>}<a className="muted small" href="/">Back to home</a></section></main>}
