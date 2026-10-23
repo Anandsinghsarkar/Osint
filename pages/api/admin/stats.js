@@ -1,5 +1,2 @@
-export default async function handler(req, res) {
-  if (req.method !== "GET") { res.setHeader("Allow", "GET"); return res.status(405).json({ error: "Method not allowed" }); }
-  // TODO: Verify admin authorization before returning dashboard statistics.
-  return res.status(501).json({ error: "Admin stats endpoint not configured yet" });
-}
+import {requireUser,requireAdmin,sendError,getFirebaseAdmin} from "../_helpers";
+export default async function handler(req,res){if(req.method!=="GET"){res.setHeader("Allow","GET");return res.status(405).json({error:"Method not allowed"});}try{const c=await requireUser(req);requireAdmin(c);const db=getFirebaseAdmin().firestore();const [u,t,p]=await Promise.all([db.collection("users").count().get(),db.collection("tools").count().get(),db.collection("paymentRequests").count().get()]);return res.json({users:u.data().count,tools:t.data().count,paymentRequests:p.data().count});}catch(e){return sendError(res,e)}}
