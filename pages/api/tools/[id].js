@@ -1,8 +1,3 @@
-export default async function handler(req, res) {
-  if (!["GET"].includes(req.method)) {
-    res.setHeader("Allow", "GET");
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-  // TODO: Resolve a tool by ID after verifying the user's session and permissions.
-  return res.status(501).json({ error: "Tool endpoint not configured yet" });
-}
+import {requireUser,sendError,getFirebaseAdmin} from "../_helpers";
+import {validPublicHttpsUrl} from "../_helpers";
+export default async function handler(req,res){if(req.method!=="POST"){res.setHeader("Allow","POST");return res.status(405).json({error:"Method not allowed"});}try{const c=await requireUser(req),db=getFirebaseAdmin().firestore(),toolRef=db.collection("tools").doc(String(req.query.id)),snap=await toolRef.get();if(!snap.exists||!snap.data().enabled)return res.status(404).json({error:"Tool not found"});const tool=snap.data();if(!validPublicHttpsUrl(tool.url))return res.status(400).json({error:"Tool URL must be a public HTTPS URL."});const cost=Math.max(1,Math.min(10000,Number(tool.cost)||1));await db.runTransaction(async tx=>{const u=await tx.get(c.ref),credits=Number(u.data()?.credits)||0;if(credits<cost)throw Object.assign(new Error("Not enough credits"),{status:402});tx.update(c.ref,{credits:credits-cost});tx.set(db.collection("creditLogs").doc(),{uid:c.decoded.uid,type:"usage",amount:-cost,toolId:toolRef.id,createdAt:getFirebaseAdmin().firestore.FieldValue.serverTimestamp()});});let response;try{response=await fetch(tool.url,{method:tool.method==="POST"?"POST":"GET",headers:{"Accept":"application/json","User-Agent":"IndiaApiSuite/1.0"},...(tool.method==="POST"?{headers:{"Accept":"application/json","Content-Type":"application/json","User-Agent":"IndiaApiSuite/1.0"},body:JSON.stringify(req.body||{})}:{}),signal:AbortSignal.timeout(12000)});}catch{throw Object.assign(new Error("Upstream API request failed. Contact admin if needed; credits are not automatically refunded."),{status:502});}const raw=await response.text();let data;try{data=JSON.parse(raw)}catch{data=raw.slice(0,20000)}if(!response.ok)throw Object.assign(new Error("Upstream API returned status "+response.status+". Credits are not automatically refunded."),{status:502});const fresh=await c.ref.get();return res.json({result:data,credits:fresh.data()?.credits||0});}catch(e){return sendError(res,e)}}
