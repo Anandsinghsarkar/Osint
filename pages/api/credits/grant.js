@@ -1,5 +1,2 @@
-export default async function handler(req, res) {
-  if (req.method !== "POST") { res.setHeader("Allow", "POST"); return res.status(405).json({ error: "Method not allowed" }); }
-  // TODO: Restrict grants to verified admins; validate amount and write an audit log.
-  return res.status(501).json({ error: "Credit grant not configured yet" });
-}
+import {requireUser,requireAdmin,sendError,getFirebaseAdmin} from "../_helpers";
+export default async function handler(req,res){if(req.method!=="POST"){res.setHeader("Allow","POST");return res.status(405).json({error:"Method not allowed"});}try{const c=await requireUser(req);requireAdmin(c);const {uid,amount}=req.body||{},n=Math.trunc(Number(amount));if(!uid||!Number.isInteger(n)||n===0||Math.abs(n)>1000000)return res.status(400).json({error:"Invalid user or amount."});const db=getFirebaseAdmin().firestore(),ref=db.collection("users").doc(String(uid));await db.runTransaction(async tx=>{const u=await tx.get(ref);if(!u.exists)throw Object.assign(new Error("User not found"),{status:404});const before=Number(u.data().credits)||0,after=Math.max(0,before+n);tx.update(ref,{credits:after});tx.set(db.collection("creditLogs").doc(),{uid:String(uid),amount:after-before,type:"admin_grant",by:c.decoded.uid,createdAt:getFirebaseAdmin().firestore.FieldValue.serverTimestamp()});});return res.json({ok:true});}catch(e){return sendError(res,e)}}
