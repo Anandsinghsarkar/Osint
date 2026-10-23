@@ -1,9 +1,25 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Secure-by-default scaffold. Add narrowly scoped rules before deployment.
-    match /{document=**} {
-      allow read, write: if false;
+    // Users: sirf apna read, admin sab
+    match /users/{uid} {
+      allow read: if request.auth != null;
+      allow write: if false; // sirf server (admin SDK)
+    }
+    // Tools: sab read, sirf admin write
+    match /tools/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+    // Settings: sab read (public razorpay key + qr), sirf admin write
+    match /settings/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+    // Transactions: user apna read
+    match /transactions/{id} {
+      allow read: if request.auth != null;
+      allow write: if false;
     }
   }
 }
