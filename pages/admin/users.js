@@ -1,6 +1,5 @@
-import Layout from "../../components/Layout";
-import AdminGuard from "../../components/AdminGuard";
-
-export default function AdminUsers() {
-  return <AdminGuard><Layout title="Manage Users"><section className="panel"><h1>Manage Users</h1><p className="muted">Add user management and credit adjustment here.</p></section></Layout></AdminGuard>;
-}
+import {useEffect,useState} from "react";import Layout from "../../components/Layout";import AdminGuard from "../../components/AdminGuard";import {auth} from "../../lib/firebase";
+export default function Users(){const [users,setUsers]=useState([]),[msg,setMsg]=useState(""),[amount,setAmount]=useState({});
+async function load(){const token=await auth.currentUser.getIdToken();const r=await fetch("/api/admin/users",{headers:{Authorization:"Bearer "+token}});const d=await r.json();if(!r.ok)throw Error(d.error);setUsers(d.users||[])}useEffect(()=>{const i=setInterval(()=>{if(auth.currentUser){load().catch(e=>setMsg(e.message));clearInterval(i)}},400);return()=>clearInterval(i)},[]);
+async function change(uid,delta){try{const token=await auth.currentUser.getIdToken(),r=await fetch("/api/admin/users",{method:"PATCH",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({uid,delta:Number(delta)})}),d=await r.json();if(!r.ok)throw Error(d.error);await load();setMsg("Credits updated.")}catch(e){setMsg(e.message)}}
+return <AdminGuard><Layout title="USER MANAGEMENT"><h1>Users & credits</h1><p className="muted">New accounts receive one free credit on first sign-in.</p>{msg&&<div className="notice">{msg}</div>}<div className="list">{users.map(u=><div className="listRow userRow" key={u.uid}><div><b>{u.name||"Google user"}</b><p className="muted">{u.email} · {u.role} · {u.credits||0} credits</p></div><div className="row"><input aria-label="Credit change amount" className="amount" type="number" value={amount[u.uid]??1} onChange={e=>setAmount({...amount,[u.uid]:e.target.value})}/><button className="btn smallBtn" onClick={()=>change(u.uid,Math.abs(Number(amount[u.uid]||1)))}>+ Add</button><button className="btn danger smallBtn" onClick={()=>change(u.uid,-Math.abs(Number(amount[u.uid]||1)))}>- Remove</button></div></div>)}</div></Layout></AdminGuard>}
