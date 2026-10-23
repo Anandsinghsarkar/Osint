@@ -1,5 +1,2 @@
-export default async function handler(req, res) {
-  if (req.method !== "POST") { res.setHeader("Allow", "POST"); return res.status(405).json({ error: "Method not allowed" }); }
-  // TODO: Deduct credits atomically on the server after auth and authorization checks.
-  return res.status(501).json({ error: "Credit deduction not configured yet" });
-}
+import {requireUser,sendError,getFirebaseAdmin} from "../_helpers";
+export default async function handler(req,res){if(req.method!=="POST"){res.setHeader("Allow","POST");return res.status(405).json({error:"Method not allowed"});}try{const c=await requireUser(req),amount=Math.trunc(Number(req.body?.amount));if(!Number.isInteger(amount)||amount<1||amount>10000)return res.status(400).json({error:"Invalid amount."});const db=getFirebaseAdmin().firestore();await db.runTransaction(async tx=>{const u=await tx.get(c.ref),n=Number(u.data()?.credits)||0;if(n<amount)throw Object.assign(new Error("Not enough credits"),{status:402});tx.update(c.ref,{credits:n-amount});tx.set(db.collection("creditLogs").doc(),{uid:c.decoded.uid,type:"deduction",amount:-amount,createdAt:getFirebaseAdmin().firestore.FieldValue.serverTimestamp()});});const u=await c.ref.get();return res.json({ok:true,credits:u.data().credits});}catch(e){return sendError(res,e)}}
