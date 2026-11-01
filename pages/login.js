@@ -2,7 +2,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { signInWithEmailAndPassword, signInWithPopup, sendEmailVerification } from "firebase/auth";
-import { auth, googleProvider } from "../lib/firebase";
+import { auth, authPersistenceReady, googleProvider } from "../lib/firebase";
 
 export default function Login() {
   const router = useRouter();
@@ -22,12 +22,13 @@ export default function Login() {
   }
   async function login(e) {
     e.preventDefault();setBusy(true);setError("");
-    try { const cred=await signInWithEmailAndPassword(auth,email.trim(),password); const ok=await finish(cred.user); if(!ok) await auth.signOut(); }
+    try { await authPersistenceReady;
+      const cred=await signInWithEmailAndPassword(auth,email.trim(),password); const ok=await finish(cred.user); if(!ok) await auth.signOut(); }
     catch(e){setError(e.message||"Login failed");} finally{setBusy(false);}
   }
   async function google() {
     setBusy(true);setError("");
-    try {const cred=await signInWithPopup(auth,googleProvider);await finish(cred.user);}
+    try {await authPersistenceReady;const cred=await signInWithPopup(auth,googleProvider);await finish(cred.user);}
     catch(e){setError(e.message||"Google login failed");}finally{setBusy(false);}
   }
   return <main className="center"><section className="card login"><div className="logo">A</div><h1>Welcome back</h1><p className="muted">Sign in to your India API Suite account.</p>
