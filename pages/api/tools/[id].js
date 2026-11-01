@@ -1,5 +1,7 @@
-import { requireUser, sendError, getFirebaseAdmin } from "../_helpers";
+import { requireUser, sendError, getFirebaseAdmin, validPublicHttpsUrl } from "../_helpers";
 import { safeApiRequest } from "../../../lib/safeApiRequest";
+
+export const config = { api: { bodyParser: { sizeLimit: "20kb" } } };
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -22,7 +24,6 @@ export default async function handler(req, res) {
     if (!snap.exists || snap.data().enabled !== true) return res.status(404).json({ error: "Tool not found." });
 
     const tool = snap.data();
-    const { validPublicHttpsUrl } = await import("../_helpers");
     if (!validPublicHttpsUrl(tool.url)) return res.status(400).json({ error: "Tool URL must be a public HTTPS URL." });
 
     const method = tool.method === "POST" ? "POST" : "GET";
