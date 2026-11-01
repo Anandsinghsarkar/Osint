@@ -2,8 +2,10 @@ import {useEffect,useState} from "react";
 import Layout from "../../components/Layout";
 import AdminGuard from "../../components/AdminGuard";
 import {auth} from "../../lib/firebase";
+import {onAuthStateChanged} from "firebase/auth";
 
 const blank={name:"",description:"",url:"",method:"GET",cost:1,enabled:true,fields:[]};
+const localApiPreset={name:"Local Lookup",description:"Enter a local value and fetch the API response.",url:"https://local.anandsinghsarkar.workers.dev/?local={}",method:"GET",cost:1,enabled:true,fields:[]};
 const blankField={key:"",label:"",type:"text",required:true,placeholder:""};
 
 export default function Tools(){
@@ -17,7 +19,7 @@ export default function Tools(){
     return d;
   }
   async function load(){try{setTools((await request("/api/admin/tools")).tools||[])}catch(e){setMessage(e.message)}}
-  useEffect(()=>{const i=setInterval(()=>{if(auth.currentUser){load();clearInterval(i)}},400);return()=>clearInterval(i)},[]);
+  useEffect(()=>onAuthStateChanged(auth,u=>{if(u)load();}),[]);
 
   async function save(e){
     e.preventDefault();setMessage("");
@@ -35,6 +37,8 @@ export default function Tools(){
     <p className="muted">Only add public HTTPS APIs you own or are authorized to use. Each published tool gets its own page at /tools/&lt;id&gt;.</p>
     <form className="card form" onSubmit={save}>
       <h2>{editing?"Edit tool":"Add a tool"}</h2>
+      {!editing&&<button type="button" className="btn ghost smallBtn" onClick={()=>setForm({...localApiPreset})}>Use Local API template</button>}
+      {!editing&&<p className="muted small">Template: ?local={} automatically creates a required “Local” input. Users enter a value such as “local”; the response appears below the form.</p>
       <label>Name<input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></label>
       <label>Description<input value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
       <label>API URL<input required type="url" placeholder="https://local.anandsinghsarkar.workers.dev/?local={}" value={form.url} onChange={e=>setForm({...form,url:e.target.value})}/></label>
