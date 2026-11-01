@@ -24,7 +24,7 @@ Next.js Pages Router starter for Vercel with Firebase Authentication/Firestore, 
 - Admin-managed tools: add, edit, publish/hide, delete, set GET/POST and credit cost.
 - Credit deduction via server-side Firestore transaction.
 - Admin user list and credit adjustment.
-- QR image upload stored in Firestore settings; manual credit-pack requests are held for admin approval.
+- QR image upload stored in Firestore settings; manual credit-pack requests require a transaction reference, reject duplicate references, and are held for admin approval.
 - Optional Razorpay order creation and signature verification.
 - Firestore collections: `users`, `tools`, `creditLogs`, `settings`, `paymentRequests`, `paymentOrders`.
 
