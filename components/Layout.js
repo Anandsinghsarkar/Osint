@@ -52,15 +52,27 @@ export default function Layout({ title, children }) {
 
       {user && (
         <nav className="mobileBottomNav" aria-label="Mobile navigation">
-          <Link href="/dashboard" className={router.pathname === "/dashboard" ? "mobileNavItem active" : "mobileNavItem"}>
-            <span className="mobileNavIcon">⌂</span><span>Home</span>
-          </Link>
-          <button className="mobileNavItem" onClick={() => goTo("#tools-section")}>
-            <span className="mobileNavIcon">⌘</span><span>Tools</span>
-          </button>
-          <button className="mobileNavItem" onClick={() => goTo("#buy-credits")}>
-            <span className="mobileNavIcon">＋</span><span>Credits</span>
-          </button>
+          {isAdminPage ? <>
+            <Link href="/admin" className={router.pathname === "/admin" ? "mobileNavItem active" : "mobileNavItem"}>
+              <span className="mobileNavIcon">⌂</span><span>Overview</span>
+            </Link>
+            <Link href="/admin/tools" className={router.pathname === "/admin/tools" ? "mobileNavItem active" : "mobileNavItem"}>
+              <span className="mobileNavIcon">⌘</span><span>Tools</span>
+            </Link>
+            <Link href="/admin/users" className={router.pathname === "/admin/users" ? "mobileNavItem active" : "mobileNavItem"}>
+              <span className="mobileNavIcon">♙</span><span>Users</span>
+            </Link>
+          </> : <>
+            <Link href="/dashboard" className={router.pathname === "/dashboard" ? "mobileNavItem active" : "mobileNavItem"}>
+              <span className="mobileNavIcon">⌂</span><span>Home</span>
+            </Link>
+            <button className="mobileNavItem" onClick={() => goTo("#tools-section")}>
+              <span className="mobileNavIcon">⌘</span><span>Tools</span>
+            </button>
+            <button className="mobileNavItem" onClick={() => goTo("#buy-credits")}>
+              <span className="mobileNavIcon">＋</span><span>Credits</span>
+            </button>
+          </>}
           <button className={moreOpen ? "mobileNavItem active" : "mobileNavItem"} onClick={() => setMoreOpen(v => !v)} aria-expanded={moreOpen}>
             <span className="mobileNavIcon">•••</span><span>More</span>
           </button>
