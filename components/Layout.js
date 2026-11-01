@@ -12,16 +12,34 @@ const adminLinks = [
   ["/admin/settings", "Settings", "⚙"]
 ];
 
+const userLinks = [
+  ["/dashboard", "Dashboard", "⌂"],
+  ["/dashboard#buy-credits", "Buy credits", "＋"]
+];
+
 export default function Layout({ title, children }) {
   const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => onAuthStateChanged(auth, setUser), []);
 
+  useEffect(() => {
+    if (!user) { setIsAdmin(false); return; }
+    let off = false;
+    user.getIdToken()
+      .then(t => fetch("/api/me", { headers: { Authorization: "Bearer " + t } }))
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (!off) setIsAdmin(d?.user?.role === "admin"); })
+      .catch(() => {});
+    return () => { off = true; };
+  }, [user]);
+
   useEffect(() => setMoreOpen(false), [router.asPath]);
 
   const isAdminPage = router.pathname.startsWith("/admin");
+  const moreLinks = isAdminPage ? adminLinks : isAdmin ? [...userLinks, ["/admin", "Admin panel", "⚙"]] : userLinks;
   const goTo = (href) => {
     if (href.startsWith("#")) {
       if (router.pathname !== "/dashboard") {
@@ -40,7 +58,7 @@ export default function Layout({ title, children }) {
         <nav className="desktopNav" aria-label="Main navigation">
           <Link href="/dashboard">Dashboard</Link>
           <Link href="/dashboard#buy-credits">Buy credits</Link>
-          {user && <Link href="/admin">Admin</Link>}
+          {isAdmin && <Link href="/admin">Admin</Link>}
           {user ? <button className="linkbtn" onClick={() => signOut(auth)}>Logout</button> : <Link href="/login">Login</Link>}
         </nav>
       </header>
@@ -66,7 +84,7 @@ export default function Layout({ title, children }) {
             <Link href="/dashboard" className={router.pathname === "/dashboard" ? "mobileNavItem active" : "mobileNavItem"}>
               <span className="mobileNavIcon">⌂</span><span>Home</span>
             </Link>
-            <button className="mobileNavItem" onClick={() => goTo("#tools-section")}>
+            <button className={router.pathname.startsWith("/tools") ? "mobileNavItem active" : "mobileNavItem"} onClick={() => goTo("#tools-section")}>
               <span className="mobileNavIcon">⌘</span><span>Tools</span>
             </button>
             <button className="mobileNavItem" onClick={() => goTo("#buy-credits")}>
@@ -82,7 +100,7 @@ export default function Layout({ title, children }) {
       {moreOpen && user && (
         <div className="mobileMorePanel">
           <div className="mobileMoreHeader"><strong>{isAdminPage ? "Admin menu" : "Quick links"}</strong><button onClick={() => setMoreOpen(false)} aria-label="Close menu">×</button></div>
-          {adminLinks.map(([href, label, icon]) => (
+          {moreLinks.map(([href, label, icon]) => (
             <Link key={href} href={href} className={router.pathname === href ? "mobileMoreLink active" : "mobileMoreLink"}>
               <span>{icon}</span>{label}<b>›</b>
             </Link>
