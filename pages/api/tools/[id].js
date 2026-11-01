@@ -1,11 +1,31 @@
 import { requireUser, sendError, getFirebaseAdmin, validPublicHttpsUrl } from "../_helpers";
 import { safeApiRequest } from "../../../lib/safeApiRequest";
+import { publicTool, publicFields, buildInput } from "../../../lib/toolSchema";
 
 export const config = { api: { bodyParser: { sizeLimit: "20kb" } } };
 
+async function getTool(db, toolId) {
+  if (!toolId || toolId.length > 150) throw Object.assign(new Error("Invalid tool."), { status: 400 });
+  const snap = await db.collection("tools").doc(toolId).get();
+  if (!snap.exists || snap.data().enabled !== true) throw Object.assign(new Error("Tool not found."), { status: 404 });
+  return snap.data();
+}
+
 export default async function handler(req, res) {
+  // GET: public metadata for one tool (powers /tools/[id]).
+  if (req.method === "GET") {
+    try {
+      await requireUser(req);
+      const toolId = String(req.query.id || "");
+      const tool = await getTool(getFirebaseAdmin().firestore(), toolId);
+      return res.json({ tool: publicTool(toolId, tool) });
+    } catch (error) {
+      return sendError(res, error);
+    }
+  }
+
   if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
+    res.setHeader("Allow", "GET, POST");
     return res.status(405).json({ error: "Method not allowed" });
   }
 
@@ -17,18 +37,22 @@ export default async function handler(req, res) {
     ctx = await requireUser(req);
     db = getFirebaseAdmin().firestore();
     const toolId = String(req.query.id || "");
-    if (!toolId || toolId.length > 150) return res.status(400).json({ error: "Invalid tool." });
-
-    const toolRef = db.collection("tools").doc(toolId);
-    const snap = await toolRef.get();
-    if (!snap.exists || snap.data().enabled !== true) return res.status(404).json({ error: "Tool not found." });
-
-    const tool = snap.data();
+    const tool = await getTool(db, toolId);
     if (!validPublicHttpsUrl(tool.url)) return res.status(400).json({ error: "Tool URL must be a public HTTPS URL." });
 
     const method = tool.method === "POST" ? "POST" : "GET";
-    const bodyObject = method === "POST" ? (req.body || {}) : null;
-    const body = bodyObject ? JSON.stringify(bodyObject) : undefined;
+    // Validate input BEFORE any credit is debited.
+    const input = buildInput(publicFields(tool.fields), req.body?.input);
+    let target = tool.url;
+    let body;
+    if (method === "POST") {
+      body = JSON.stringify(input);
+    } else {
+      const u = new URL(tool.url);
+      for (const [k, v] of Object.entries(input)) u.searchParams.set(k, String(v));
+      target = u.toString();
+    }
+    if (target.length > 4000) return res.status(413).json({ error: "API input is too large." });
     if (body && Buffer.byteLength(body) > 16 * 1024) {
       return res.status(413).json({ error: "API input is too large. Maximum 16 KB." });
     }
@@ -47,7 +71,7 @@ export default async function handler(req, res) {
     });
 
     try {
-      const upstream = await safeApiRequest(tool.url, { method, body, timeoutMs: 12000, maxBytes: 1024 * 1024 });
+      const upstream = await safeApiRequest(target, { method, body, timeoutMs: 12000, maxBytes: 1024 * 1024 });
       if (upstream.status < 200 || upstream.status >= 300) {
         throw new Error("The external API returned HTTP " + upstream.status + ".");
       }

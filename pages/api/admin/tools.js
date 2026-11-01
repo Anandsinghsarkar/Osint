@@ -1,4 +1,5 @@
 import { requireUser, requireAdmin, sendError, getFirebaseAdmin, methodNotAllowed, validPublicHttpsUrl } from "../_helpers";
+import { sanitizeFields } from "../../../lib/toolSchema";
 
 export default async function handler(req, res) {
   try {
@@ -12,7 +13,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "POST") {
-      const { id, name, description, url, method, cost, enabled } = req.body || {};
+      const { id, name, description, url, method, cost, enabled, fields } = req.body || {};
       const cleanName = String(name || "").trim();
       const cleanUrl = String(url || "").trim();
       const numericCost = Number(cost);
@@ -20,6 +21,7 @@ export default async function handler(req, res) {
           !Number.isInteger(numericCost) || numericCost < 1 || numericCost > 10000) {
         return res.status(400).json({ error: "Enter a name, public HTTPS URL and credit cost from 1 to 10000." });
       }
+      const cleanFields = sanitizeFields(fields);
       const data = {
         name: cleanName,
         description: String(description || "").slice(0, 500),
@@ -27,6 +29,7 @@ export default async function handler(req, res) {
         method: method === "POST" ? "POST" : "GET",
         cost: numericCost,
         enabled: enabled !== false,
+        fields: cleanFields,
         updatedAt: getFirebaseAdmin().firestore.FieldValue.serverTimestamp()
       };
       if (id) {
