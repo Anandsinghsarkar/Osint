@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { requireUser, sendError, getFirebaseAdmin } from "../_helpers";
 
 const PLANS = { 10: 30, 40: 99, 100: 199 };
@@ -17,15 +18,32 @@ export default async function handler(req, res) {
     }
 
     const db = getFirebaseAdmin().firestore();
-    const ref = await db.collection("paymentRequests").add({
-      uid: ctx.decoded.uid,
-      email: ctx.user.email,
-      credits,
-      amount: PLANS[credits],
-      transactionReference,
-      status: "pending",
-      createdAt: getFirebaseAdmin().firestore.FieldValue.serverTimestamp()
-    });
+    const settings = await db.collection("settings").doc("site").get();
+    if (!settings.data()?.paymentQR) {
+      return res.status(503).json({ error: "Manual QR payment is not configured yet. Please contact the site administrator." });
+    }
+
+    // A transaction reference can only be submitted once, even across different accounts.
+    const normalizedReference = transactionReference.toUpperCase();
+    const requestId = "utr_" + crypto.createHash("sha256").update(normalizedReference).digest("hex");
+    const ref = db.collection("paymentRequests").doc(requestId);
+    try {
+      await ref.create({
+        uid: ctx.decoded.uid,
+        email: ctx.user.email,
+        credits,
+        amount: PLANS[credits],
+        transactionReference: normalizedReference,
+        status: "pending",
+        createdAt: getFirebaseAdmin().firestore.FieldValue.serverTimestamp()
+      });
+    } catch (error) {
+      if (error.code === 6 || error.code === "already-exists") {
+        return res.status(409).json({ error: "This transaction reference has already been submitted." });
+      }
+      throw error;
+    }
+
     return res.json({
       ok: true,
       requestId: ref.id,
