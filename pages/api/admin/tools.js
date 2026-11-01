@@ -1,5 +1,5 @@
 import { requireUser, requireAdmin, sendError, getFirebaseAdmin, methodNotAllowed, validPublicHttpsUrl } from "../_helpers";
-import { sanitizeFields } from "../../../lib/toolSchema";
+import { sanitizeFields, extractTemplate } from "../../../lib/toolSchema";
 
 export default async function handler(req, res) {
   try {
@@ -15,13 +15,15 @@ export default async function handler(req, res) {
     if (req.method === "POST") {
       const { id, name, description, url, method, cost, enabled, fields } = req.body || {};
       const cleanName = String(name || "").trim();
-      const cleanUrl = String(url || "").trim();
+      // Template URLs such as https://host/?local={} become a base URL plus an input field.
+      const tpl = extractTemplate(url, fields);
+      const cleanUrl = tpl.url;
       const numericCost = Number(cost);
       if (!cleanName || cleanName.length > 100 || !validPublicHttpsUrl(cleanUrl) ||
           !Number.isInteger(numericCost) || numericCost < 1 || numericCost > 10000) {
         return res.status(400).json({ error: "Enter a name, public HTTPS URL and credit cost from 1 to 10000." });
       }
-      const cleanFields = sanitizeFields(fields);
+      const cleanFields = sanitizeFields(tpl.fields);
       const data = {
         name: cleanName,
         description: String(description || "").slice(0, 500),
@@ -41,7 +43,7 @@ export default async function handler(req, res) {
         data.createdAt = getFirebaseAdmin().firestore.FieldValue.serverTimestamp();
         await db.collection("tools").add(data);
       }
-      return res.json({ ok: true });
+      return res.json({ ok: true, fields: cleanFields.map(f => f.key) });
     }
 
     if (req.method === "DELETE") {

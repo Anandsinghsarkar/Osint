@@ -59,7 +59,7 @@ export default async function handler(req, res) {
     cost = Math.max(1, Math.min(10000, Math.floor(Number(tool.cost) || 1)));
     debitRef = db.collection("creditLogs").doc();
 
-    await db.runTransaction(async tx => {
+    const remaining = await db.runTransaction(async tx => {
       const userSnap = await tx.get(ctx.ref);
       const credits = Number(userSnap.data()?.credits) || 0;
       if (credits < cost) throw Object.assign(new Error("Not enough credits."), { status: 402 });
@@ -68,6 +68,7 @@ export default async function handler(req, res) {
         uid: ctx.decoded.uid, type: "usage", amount: -cost, toolId,
         createdAt: getFirebaseAdmin().firestore.FieldValue.serverTimestamp()
       });
+      return credits - cost;
     });
 
     try {
@@ -75,8 +76,7 @@ export default async function handler(req, res) {
       if (upstream.status < 200 || upstream.status >= 300) {
         throw new Error("The external API returned HTTP " + upstream.status + ".");
       }
-      const fresh = await ctx.ref.get();
-      return res.status(200).json({ result: upstream.data, credits: Number(fresh.data()?.credits) || 0 });
+      return res.status(200).json({ result: upstream.data, credits: remaining });
     } catch (upstreamError) {
       // Refund exactly once, using a deterministic ledger document for this debit.
       try {

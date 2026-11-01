@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "../lib/firebase";
+import { apiGet } from "../lib/api";
 
 const adminLinks = [
   ["/admin", "Overview", "⌂"],
@@ -28,11 +29,8 @@ export default function Layout({ title, children }) {
   useEffect(() => {
     if (!user) { setIsAdmin(false); return; }
     let off = false;
-    user.getIdToken()
-      .then(t => fetch("/api/me", { headers: { Authorization: "Bearer " + t } }))
-      .then(r => (r.ok ? r.json() : null))
-      .then(d => { if (!off) setIsAdmin(d?.user?.role === "admin"); })
-      .catch(() => {});
+    // Shared, cached request: the page itself asks for /api/me too, so this costs nothing extra.
+    apiGet("/api/me").then(d => { if (!off) setIsAdmin(d?.user?.role === "admin"); }).catch(() => {});
     return () => { off = true; };
   }, [user]);
 

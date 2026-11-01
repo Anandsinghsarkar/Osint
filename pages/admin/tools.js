@@ -21,7 +21,7 @@ export default function Tools(){
 
   async function save(e){
     e.preventDefault();setMessage("");
-    try{await request("/api/admin/tools","POST",{...form,cost:Number(form.cost),id:editing||undefined});setForm(blank);setEditing("");await load();setMessage("Tool saved.")}
+    try{const d=await request("/api/admin/tools","POST",{...form,cost:Number(form.cost),id:editing||undefined});setForm(blank);setEditing("");await load();setMessage("Tool saved."+(d.fields&&d.fields.length?" Inputs: "+d.fields.join(", "):""))}
     catch(err){setMessage(err.message)}
   }
   async function del(id){if(!confirm("Delete this tool?"))return;try{await request("/api/admin/tools?id="+encodeURIComponent(id),"DELETE");await load()}catch(e){setMessage(e.message)}}
@@ -37,18 +37,19 @@ export default function Tools(){
       <h2>{editing?"Edit tool":"Add a tool"}</h2>
       <label>Name<input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></label>
       <label>Description<input value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
-      <label>API URL<input required type="url" placeholder="https://api.example.com/endpoint" value={form.url} onChange={e=>setForm({...form,url:e.target.value})}/></label>
+      <label>API URL<input required type="url" placeholder="https://local.anandsinghsarkar.workers.dev/?local={}" value={form.url} onChange={e=>setForm({...form,url:e.target.value})}/></label>
+      <p className="muted small">Put {"{}"} where the user's input goes, e.g. ?local={"{}"}. The input box is created automatically from the parameter name.</p>
       <div className="formRow">
         <label>Method<select value={form.method} onChange={e=>setForm({...form,method:e.target.value})}><option>GET</option><option>POST</option></select></label>
         <label>Credit cost<input type="number" min="1" max="10000" required value={form.cost} onChange={e=>setForm({...form,cost:e.target.value})}/></label>
       </div>
 
       <h3>Input fields</h3>
-      <p className="muted">Shown on the tool page. GET tools send them as query parameters (?key=value); POST tools send them as a JSON body. Key = parameter name the API expects.</p>
+      <p className="muted">Optional. Auto-created from {"{}"} in the URL; add more here if needed. GET tools send them as query parameters (?key=value); POST tools send them as a JSON body.</p>
       {form.fields.map((f,i)=><div className="empty" key={i} style={{display:"grid",gap:12,margin:0}}>
         <div className="formRow">
-          <label>Key<input required placeholder="number" value={f.key} onChange={e=>setField(i,{key:e.target.value.replace(/[^A-Za-z0-9_]/g,"")})}/></label>
-          <label>Label<input required placeholder="Mobile number" value={f.label} onChange={e=>setField(i,{label:e.target.value})}/></label>
+          <label>Key<input required placeholder="local" value={f.key} onChange={e=>setField(i,{key:e.target.value.replace(/[^A-Za-z0-9_]/g,"")})}/></label>
+          <label>Label<input required placeholder="Enter value" value={f.label} onChange={e=>setField(i,{label:e.target.value})}/></label>
         </div>
         <div className="formRow">
           <label>Type<select value={f.type} onChange={e=>setField(i,{type:e.target.value})}><option value="text">Text</option><option value="number">Number</option><option value="textarea">Long text</option></select></label>
