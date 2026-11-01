@@ -32,6 +32,7 @@ Next.js Pages Router starter for Vercel with Firebase Authentication/Firestore, 
 
 - Add only APIs you own or are authorized to use. Tool URLs must use HTTPS and private/local addresses are rejected.
 - Tool APIs currently support GET and POST JSON requests; API-specific keys/headers and custom request fields are not configurable in the UI yet.
-- A failed upstream request does not automatically refund credits; review failed requests before production use.
-- Razorpay is a live payment integration: test in Razorpay Test Mode first. Never expose `RAZORPAY_KEY_SECRET` or Firebase service-account private keys in any `NEXT_PUBLIC_*` variable.
-- Review your Firestore rules and test the full sign-in/payment flows before public launch.
+- If an upstream API request fails or returns a non-2xx response, the server refunds the deducted credits once and records a separate refund ledger entry.
+- Razorpay payment credits are granted only after the server verifies the checkout signature and confirms a captured payment, order ID, INR currency and exact amount with Razorpay. Enable automatic capture in the Razorpay account. Test in Test Mode first. Never expose `RAZORPAY_KEY_SECRET` or Firebase service-account private keys in any `NEXT_PUBLIC_*` variable.
+- The included Firestore rules deny all direct browser access. Publish `firestore.rules` in Firebase Console (or deploy it with Firebase CLI); committing the file to GitHub does not publish it to your Firebase project.
+- Test Google sign-in, first-login credits, admin access, API success/failure refunds, manual approvals and Razorpay Test Mode before public launch.
