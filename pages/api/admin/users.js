@@ -3,8 +3,10 @@ export default async function handler(req,res){
  try{
   const c=await requireUser(req);requireAdmin(c);const db=getFirebaseAdmin().firestore();
   if(req.method==="GET"){
-   const s=await db.collection("users").orderBy("createdAt","desc").limit(500).get();
-   return res.json({users:s.docs.map(d=>{const x=d.data();return {uid:d.id,publicId:x.publicId||"—",name:x.name||"",photoURL:x.photoURL||"",email:x.email||"",role:x.role||"user",credits:Number(x.credits)||0,createdAt:x.createdAt?.toDate?.()?.toISOString()||null}})});
+   const s=await db.collection("users").get();
+   const users=s.docs.map(d=>{const x=d.data();return {uid:d.id,publicId:x.publicId||"—",name:x.name||"",photoURL:x.photoURL||"",email:x.email||"",role:x.role||"user",credits:Number(x.credits)||0,createdAt:x.createdAt?.toDate?.()?.toISOString()||null}});
+   users.sort((a,b)=>(b.createdAt||"").localeCompare(a.createdAt||""));
+   return res.json({users});
   }
   if(req.method==="PATCH"){
    const {uid,delta}=req.body||{},n=Math.trunc(Number(delta));
